@@ -56,12 +56,76 @@ var (
 	getMonitorInfoW   = user32.NewProc("GetMonitorInfoW")
 )
 
+// F11 / "□" button: fills the work area, taskbar stays visible.
 var fullscreenWindowState = struct {
+	active bool
+	rect   rect
+}{
+	active: false,
+}
+
+// Page (video) fullscreen: covers the whole monitor, no frame.
+var pageFullscreenWindowState = struct {
 	active bool
 	rect   rect
 	style  uintptr
 }{
 	active: false,
+}
+
+const (
+	gwlpWndProc     = 0xfffffffc
+	wmGetMinMaxInfo = 0x0024
+)
+
+type point struct {
+	X int32
+	Y int32
+}
+
+type minMaxInfo struct {
+	PtReserved     point
+	PtMaxSize      point
+	PtMaxPosition  point
+	PtMinTrackSize point
+	PtMaxTrackSize point
+}
+
+var (
+	callWindowProc  = user32.NewProc("CallWindowProcW")
+	originalWndProc uintptr
+	minMaxHooked    bool
+)
+
+// Frameless windows (no WS_CAPTION) cover the whole monitor, including the
+// taskbar, when maximized/snapped. Answer WM_GETMINMAXINFO with the work
+// area so Windows keeps the taskbar visible.
+var minMaxWndProc = syscall.NewCallback(func(hwnd, msg, wparam, lparam uintptr) uintptr {
+	ret, _, _ := callWindowProc.Call(originalWndProc, hwnd, msg, wparam, lparam)
+	if msg == wmGetMinMaxInfo && lparam != 0 && !pageFullscreenWindowState.active {
+		mon, okMon := monitorBounds(hwnd)
+		work, okWork := monitorWorkArea(hwnd)
+		if okMon && okWork {
+			info := (*minMaxInfo)(*(*unsafe.Pointer)(unsafe.Pointer(&lparam)))
+			info.PtMaxPosition.X = work.Left - mon.Left
+			info.PtMaxPosition.Y = work.Top - mon.Top
+			info.PtMaxSize.X = work.Right - work.Left
+			info.PtMaxSize.Y = work.Bottom - work.Top
+		}
+	}
+	return ret
+})
+
+func installMinMaxHook(hwnd uintptr) {
+	if minMaxHooked {
+		return
+	}
+	previous, _, _ := setWindowLongPtr.Call(hwnd, uintptr(gwlpWndProc), minMaxWndProc)
+	if previous == 0 {
+		return
+	}
+	originalWndProc = previous
+	minMaxHooked = true
 }
 
 func configureNativeWindow(hwnd uintptr) {
@@ -70,6 +134,7 @@ func configureNativeWindow(hwnd uintptr) {
 	style |= wsThickFrame | wsMinimizeBox | wsMaximizeBox | wsSysMenu
 	setWindowLongPtr.Call(hwnd, uintptr(gwlStyle), style)
 	setWindowPos.Call(hwnd, 0, 0, 0, 0, 0, swpNoMove|swpNoSize|swpNoZOrder|swpFrameChanged)
+	installMinMaxHook(hwnd)
 }
 
 func monitorBounds(hwnd uintptr) (rect, bool) {
@@ -153,7 +218,6 @@ func toggleMaximizeNativeWindow(hwnd uintptr) {
 
 func toggleFullscreenNativeWindow(hwnd uintptr) {
 	if fullscreenWindowState.active {
-		setWindowLongPtr.Call(hwnd, uintptr(gwlStyle), fullscreenWindowState.style)
 		setWindowPos.Call(hwnd, 0, uintptr(fullscreenWindowState.rect.Left), uintptr(fullscreenWindowState.rect.Top), uintptr(fullscreenWindowState.rect.Right-fullscreenWindowState.rect.Left), uintptr(fullscreenWindowState.rect.Bottom-fullscreenWindowState.rect.Top), swpNoZOrder|swpFrameChanged)
 		fullscreenWindowState.active = false
 		return
@@ -164,18 +228,44 @@ func toggleFullscreenNativeWindow(hwnd uintptr) {
 	if windowRectOk == 0 {
 		return
 	}
+	fullscreenWindowState.rect = current
+	fullscreenWindowState.active = true
 
-	// True fullscreen: whole monitor (not just the work area) and no invisible
-	// resize border, otherwise the bottom of the page is cut off.
+	bounds, monitorOk := monitorWorkArea(hwnd)
+	if !monitorOk {
+		fullscreenWindowState.active = false
+		return
+	}
+
+	width := int(bounds.Right - bounds.Left)
+	height := int(bounds.Bottom - bounds.Top)
+	setWindowPos.Call(hwnd, 0, uintptr(bounds.Left), uintptr(bounds.Top), uintptr(width), uintptr(height), swpNoZOrder|swpFrameChanged)
+}
+
+// togglePageFullscreenNativeWindow is used only for page/video fullscreen.
+func togglePageFullscreenNativeWindow(hwnd uintptr) {
+	if pageFullscreenWindowState.active {
+		setWindowLongPtr.Call(hwnd, uintptr(gwlStyle), pageFullscreenWindowState.style)
+		r := pageFullscreenWindowState.rect
+		setWindowPos.Call(hwnd, 0, uintptr(r.Left), uintptr(r.Top), uintptr(r.Right-r.Left), uintptr(r.Bottom-r.Top), swpNoZOrder|swpFrameChanged)
+		pageFullscreenWindowState.active = false
+		return
+	}
+
+	var current rect
+	ok, _, _ := getWindowRect.Call(hwnd, uintptr(unsafe.Pointer(&current)))
+	if ok == 0 {
+		return
+	}
 	bounds, monitorOk := monitorBounds(hwnd)
 	if !monitorOk {
 		return
 	}
 
 	style, _, _ := getWindowLongPtr.Call(hwnd, uintptr(gwlStyle))
-	fullscreenWindowState.rect = current
-	fullscreenWindowState.style = style
-	fullscreenWindowState.active = true
+	pageFullscreenWindowState.rect = current
+	pageFullscreenWindowState.style = style
+	pageFullscreenWindowState.active = true
 
 	setWindowLongPtr.Call(hwnd, uintptr(gwlStyle), style&^uintptr(wsThickFrame))
 	width := int(bounds.Right - bounds.Left)

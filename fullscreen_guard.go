@@ -155,7 +155,29 @@ function ensureStyle() {
     } catch (e) {}
   }
 
-  function setRootState(active) {
+  var watchTimer = 0;
+
+function startWatch() {
+
+if (watchTimer) return;
+
+watchTimer = setInterval(function () {
+
+if (fsElement && !fsElement.isConnected) leave(false);
+
+if (childFrame && !childFrame.isConnected) leaveChild(childFrame, false);
+
+}, 1000);
+
+}
+
+function stopWatch() {
+
+if (watchTimer) { clearInterval(watchTimer); watchTimer = 0; }
+
+}
+
+function setRootState(active) {
 
 var root = document.documentElement;
 
@@ -165,11 +187,17 @@ if (active) {
 
 root.setAttribute('data-sparrow-fs-on', '1');
 
+startWatch();
+
 setChromeVisible(false);
 
 } else if (!fsElement && !childFrame) {
 
 root.removeAttribute('data-sparrow-fs-on');
+
+stopWatch();
+
+try { var st = document.getElementById('__sparrow_fs_style'); if (st) st.remove(); } catch (e) {}
 
 restoreAncestors();
 
@@ -455,14 +483,6 @@ if (!IS_TOP || !currentElement()) return;
 try { if (typeof window.setPageFullscreen === 'function') window.setPageFullscreen(false); } catch (e) {}
 
 });
-
-setInterval(function () {
-
-if (fsElement && !fsElement.isConnected) leave(false);
-
-if (childFrame && !childFrame.isConnected) leaveChild(childFrame, false);
-
-}, 1000);
 
 window.addEventListener('keydown', function (event) {
     if (event.key !== 'Escape' || !currentElement()) return;

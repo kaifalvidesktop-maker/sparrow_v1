@@ -363,7 +363,6 @@ func main() {
 	w.SetTitle("SPARROW")
 	w.SetSize(1200, 800, 0)
 	fitWindowToTaskbarArea(windowHandle, 1200, 800)
-	startTaskbarGuard(windowHandle)
 
 	// -------------------------------
 	// GLOBAL SCRIPTS & INJECTIONS
