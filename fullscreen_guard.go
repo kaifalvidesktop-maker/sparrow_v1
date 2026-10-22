@@ -14,37 +14,128 @@ func BuildFullscreenGuardJS() string {
   var nativeFullscreenGetter = null;
   var swallowNativeExit = false;
 
-  var css =
-    '[' + ATTR + '] {' +
-    ' position: fixed !important;' +
-    ' top: var(--sparrow-fs-top, 0px) !important;' +
-    ' left: 0 !important; right: auto !important; bottom: auto !important;' +
-    ' width: 100vw !important;' +
-    ' height: calc(100vh - var(--sparrow-fs-top, 0px)) !important;' +
-    ' min-width: 0 !important; min-height: 0 !important;' +
-    ' max-width: none !important; max-height: none !important;' +
-    ' margin: 0 !important; transform: none !important;' +
-    ' z-index: 2147483000 !important; background-color: #000 !important;' +
-    ' box-sizing: border-box !important; object-fit: contain !important;' +
-    '}' +
-    'html[data-sparrow-fs-on] { overflow: hidden !important; }';
+  var NEUTRAL = {
+'transform': 'none', 'translate': 'none', 'rotate': 'none', 'scale': 'none',
+'filter': 'none', 'backdrop-filter': 'none', 'perspective': 'none',
+'contain': 'none', 'clip-path': 'none', 'zoom': '1',
+'will-change': 'auto', 'content-visibility': 'visible'
+};
 
-  function topOffset() {
-    if (!IS_TOP) return 0;
-    try {
-      var chrome = document.getElementById('__sparrow_chrome');
-      if (chrome) {
-        var bottom = chrome.getBoundingClientRect().bottom;
-        if (bottom > 0) {
-          window.__SPARROW_CHROME_HEIGHT__ = bottom;
-          return bottom;
-        }
-      }
-    } catch (e) {}
-    return Number(window.__SPARROW_CHROME_HEIGHT__) || 116;
-  }
+var saved = [];
 
-  function ensureStyle() {
+var css =
+
+'[' + ATTR + '] {' +
+
+' position: fixed !important;' +
+
+' top: 0 !important; left: 0 !important; right: auto !important; bottom: auto !important;' +
+
+' width: 100vw !important; height: 100vh !important;' +
+
+' min-width: 0 !important; min-height: 0 !important;' +
+
+' max-width: none !important; max-height: none !important;' +
+
+' margin: 0 !important; transform: none !important; zoom: 1 !important;' +
+
+' z-index: 2147483000 !important; background-color: #000 !important;' +
+
+' box-sizing: border-box !important; object-fit: contain !important;' +
+
+' visibility: visible !important; opacity: 1 !important;' +
+
+'}' +
+
+'html[data-sparrow-fs-on][data-sparrow-fs-on][data-sparrow-fs-on] {' +
+
+' overflow: hidden !important; padding: 0 !important; margin: 0 !important; scroll-padding: 0 !important;' +
+
+'}' +
+
+'html[data-sparrow-fs-on][data-sparrow-fs-on] body { overflow: hidden !important; }' +
+
+'html[data-sparrow-fs-on][data-sparrow-fs-on] body [data-sparrow-fs]:not(#__sf_a):not(#__sf_b) { zoom: 1 !important; }' +
+
+'html[data-sparrow-fs-on][data-sparrow-fs-on] #__sparrow_chrome { display: none !important; }';
+
+function setChromeVisible(visible) {
+
+if (!IS_TOP) return;
+
+try {
+
+var chrome = document.getElementById('__sparrow_chrome');
+
+if (chrome) chrome.style.setProperty('display', visible ? 'block' : 'none', 'important');
+
+} catch (e) {}
+
+}
+
+function restoreAncestors() {
+
+while (saved.length) {
+
+var item = saved.pop();
+
+try {
+
+Object.keys(item.prev).forEach(function (prop) {
+
+var old = item.prev[prop];
+
+if (old[0]) item.el.style.setProperty(prop, old[0], old[1]);
+
+else item.el.style.removeProperty(prop);
+
+});
+
+} catch (e) {}
+
+}
+
+}
+
+function neutralizeAncestors(element) {
+
+restoreAncestors();
+
+var node = element;
+
+while (node) {
+
+if (node.nodeType === 11) { node = node.host; continue; }
+
+if (node.nodeType !== 1) break;
+
+if (node !== document.documentElement) {
+
+var prev = {};
+
+try {
+
+Object.keys(NEUTRAL).forEach(function (prop) {
+
+prev[prop] = [node.style.getPropertyValue(prop), node.style.getPropertyPriority(prop)];
+
+node.style.setProperty(prop, NEUTRAL[prop], 'important');
+
+});
+
+saved.push({ el: node, prev: prev });
+
+} catch (e) {}
+
+}
+
+node = node.parentNode;
+
+}
+
+}
+
+function ensureStyle() {
     if (window.__sparrowFsSheet || document.getElementById('__sparrow_fs_style')) return;
     try {
       var sheet = new CSSStyleSheet();
@@ -65,17 +156,66 @@ func BuildFullscreenGuardJS() string {
   }
 
   function setRootState(active) {
-    var root = document.documentElement;
-    if (!root) return;
-    if (active) {
-      root.style.setProperty('--sparrow-fs-top', topOffset() + 'px');
-      root.setAttribute('data-sparrow-fs-on', '1');
-    } else if (!fsElement && !childFrame) {
-      root.removeAttribute('data-sparrow-fs-on');
-    }
-  }
 
-  function notifyParent(state) {
+var root = document.documentElement;
+
+if (!root) return;
+
+if (active) {
+
+root.setAttribute('data-sparrow-fs-on', '1');
+
+setChromeVisible(false);
+
+} else if (!fsElement && !childFrame) {
+
+root.removeAttribute('data-sparrow-fs-on');
+
+restoreAncestors();
+
+setChromeVisible(true);
+
+}
+
+}
+
+var nativeTimer = 0;
+
+function syncNative() {
+
+if (!IS_TOP) return;
+
+clearTimeout(nativeTimer);
+
+nativeTimer = setTimeout(function () {
+
+try {
+
+if (typeof window.setPageFullscreen === 'function') {
+
+var r = window.setPageFullscreen(!!currentElement());
+
+if (r && r.catch) r.catch(function () {});
+
+}
+
+} catch (e) {}
+
+[120, 400].forEach(function (ms) {
+
+setTimeout(function () {
+
+try { window.dispatchEvent(new Event('resize')); } catch (e) {}
+
+}, ms);
+
+});
+
+}, 30);
+
+}
+
+function notifyParent(state) {
     if (IS_TOP) return;
     try {
       window.parent.postMessage({ __sparrowFullscreenState: state }, '*');
@@ -110,6 +250,8 @@ func BuildFullscreenGuardJS() string {
     try { element.removeAttribute(ATTR); } catch (e) {}
     setRootState(false);
     if (!silent && !childFrame) notifyParent('exit');
+
+syncNative();
     if (!silent) fireFullscreenChange(element);
     nudgeLayout();
   }
@@ -120,6 +262,8 @@ func BuildFullscreenGuardJS() string {
     try { frame.removeAttribute(ATTR); } catch (e) {}
     setRootState(false);
     if (!silent && !fsElement) notifyParent('exit');
+
+syncNative();
     if (!silent) fireFullscreenChange(frame);
     nudgeLayout();
   }
@@ -139,8 +283,12 @@ func BuildFullscreenGuardJS() string {
     ensureStyle();
     fsElement = element;
     setRootState(true);
-    if (!isDocumentRoot(element)) element.setAttribute(ATTR, '1');
+    if (!isDocumentRoot(element)) {
+      element.setAttribute(ATTR, '1');
+      neutralizeAncestors(element);
+    }
     notifyParent('enter');
+    syncNative();
     fireFullscreenChange(element);
     nudgeLayout();
   }
@@ -153,7 +301,9 @@ func BuildFullscreenGuardJS() string {
     childFrame = frame;
     setRootState(true);
     frame.setAttribute(ATTR, '1');
+    neutralizeAncestors(frame);
     notifyParent('enter');
+    syncNative();
     fireFullscreenChange(frame);
     nudgeLayout();
   }
@@ -298,7 +448,23 @@ func BuildFullscreenGuardJS() string {
     try { document.addEventListener(name, onNativeFullscreenChange, true); } catch (e) {}
   });
 
-  window.addEventListener('keydown', function (event) {
+  window.addEventListener('pagehide', function () {
+
+if (!IS_TOP || !currentElement()) return;
+
+try { if (typeof window.setPageFullscreen === 'function') window.setPageFullscreen(false); } catch (e) {}
+
+});
+
+setInterval(function () {
+
+if (fsElement && !fsElement.isConnected) leave(false);
+
+if (childFrame && !childFrame.isConnected) leaveChild(childFrame, false);
+
+}, 1000);
+
+window.addEventListener('keydown', function (event) {
     if (event.key !== 'Escape' || !currentElement()) return;
     event.stopImmediatePropagation();
     event.preventDefault();

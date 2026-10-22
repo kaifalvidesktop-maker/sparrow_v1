@@ -59,6 +59,7 @@ var (
 var fullscreenWindowState = struct {
 	active bool
 	rect   rect
+	style  uintptr
 }{
 	active: false,
 }
@@ -152,6 +153,7 @@ func toggleMaximizeNativeWindow(hwnd uintptr) {
 
 func toggleFullscreenNativeWindow(hwnd uintptr) {
 	if fullscreenWindowState.active {
+		setWindowLongPtr.Call(hwnd, uintptr(gwlStyle), fullscreenWindowState.style)
 		setWindowPos.Call(hwnd, 0, uintptr(fullscreenWindowState.rect.Left), uintptr(fullscreenWindowState.rect.Top), uintptr(fullscreenWindowState.rect.Right-fullscreenWindowState.rect.Left), uintptr(fullscreenWindowState.rect.Bottom-fullscreenWindowState.rect.Top), swpNoZOrder|swpFrameChanged)
 		fullscreenWindowState.active = false
 		return
@@ -162,15 +164,20 @@ func toggleFullscreenNativeWindow(hwnd uintptr) {
 	if windowRectOk == 0 {
 		return
 	}
-	fullscreenWindowState.rect = current
-	fullscreenWindowState.active = true
 
-	bounds, monitorOk := monitorWorkArea(hwnd)
+	// True fullscreen: whole monitor (not just the work area) and no invisible
+	// resize border, otherwise the bottom of the page is cut off.
+	bounds, monitorOk := monitorBounds(hwnd)
 	if !monitorOk {
-		fullscreenWindowState.active = false
 		return
 	}
 
+	style, _, _ := getWindowLongPtr.Call(hwnd, uintptr(gwlStyle))
+	fullscreenWindowState.rect = current
+	fullscreenWindowState.style = style
+	fullscreenWindowState.active = true
+
+	setWindowLongPtr.Call(hwnd, uintptr(gwlStyle), style&^uintptr(wsThickFrame))
 	width := int(bounds.Right - bounds.Left)
 	height := int(bounds.Bottom - bounds.Top)
 	setWindowPos.Call(hwnd, 0, uintptr(bounds.Left), uintptr(bounds.Top), uintptr(width), uintptr(height), swpNoZOrder|swpFrameChanged)

@@ -448,7 +448,7 @@ const chromeInjectionJS = `
       '  overflow: visible !important; z-index: 2147483647 !important; pointer-events: auto !important;' +
       '  font-family: "Segoe UI", sans-serif !important; font-size: 13px !important; line-height: normal !important;' +
       '  text-align: left !important; direction: ltr !important; white-space: normal !important;' +
-      '  color: #eee !important; background: #0b0b0d !important; transform: none !important;' +
+      '  color: #eee !important; background: var(--tabstrip-bg, #0b0b0d) !important; transform: none !important;' +
       '  filter: none !important; clip: auto !important; clip-path: none !important;' +
       '  contain: layout style !important; isolation: isolate !important;' +
       '}' +
@@ -536,8 +536,8 @@ const chromeInjectionJS = `
       '.tab-chip.active { background: var(--chip-active); color: var(--chrome-text); box-shadow: 0 -3px 10px rgba(0,0,0,0.15); }' +
       '.tab-chip .tab-favicon { width: 16px; height: 16px; flex: 0 0 16px; object-fit: contain; border-radius: 2px; }' +
       '.tab-chip .tab-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; min-width: 0; }' +
-      '.tab-chip .tab-close { color: var(--chrome-subtle); font: inherit; font-size: 13px; line-height: 1; padding: 2px 5px; border: 0; border-radius: 4px; background: transparent; cursor: pointer; flex: 0 0 auto; position: relative; z-index: 1; }' +
-      '.tab-chip .tab-close:hover { background: #c42b1c; color: #fff; }' +
+      '.tab-chip .tab-close { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; color: var(--chrome-subtle); font: inherit; font-size: 18px; line-height: 1; padding: 0; border: 0; border-radius: 5px; background: transparent; cursor: pointer; flex: 0 0 24px; position: relative; z-index: 1; }' +
+      '.tab-chip .tab-close:hover { background: #c42b1c !important; color: #fff !important; }' +
       '.tab-chip.incognito { background: #1a1420; border: 1px solid #3a2a4a; }' +
       '.tab-chip:hover { background: color-mix(in srgb, var(--chrome-accent) 20%, var(--chip-bg)); color: var(--chrome-text); }' +
       '#__sparrow_chrome.vertical-tabs #tabstrip {' +
@@ -600,13 +600,13 @@ const chromeInjectionJS = `
       '#shield-icon { font-size: 12px; color: #3ddc84; flex-shrink: 0; cursor: pointer; }' +
       '#address-bar { flex: 1 1 auto !important; width: auto !important; min-width: 0 !important; height: 32px !important; background: transparent !important; border: none !important; outline: none !important; color: var(--chrome-text) !important; font-size: 13px !important; display: block !important; }' +
       '#address-bar::placeholder { color: var(--chrome-subtle); }' +
-      '#__sparrow_chrome #btn-app-lock { width: 26px; height: 26px; flex: 0 0 26px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; padding: 4px; background: transparent; color: var(--chrome-muted); cursor: pointer; }' +
+      '#__sparrow_chrome #btn-app-lock { width: 26px; height: 26px; flex: 0 0 26px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; padding: 4px; background: transparent; color: #fff !important; cursor: pointer; }' +
       '#__sparrow_chrome #btn-app-lock:hover { background: rgba(255,255,255,0.08); color: var(--chrome-text); }' +
       '#__sparrow_chrome #btn-app-lock svg { width: 16px; height: 16px; fill: currentColor; }' +
       '#star-btn { width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--chrome-subtle); font-size: 15px; flex-shrink: 0; }' +
       '#star-btn:hover { background: rgba(255,255,255,0.06); color: #ffd93d; }' +
       '#star-btn.saved { color: #ffd93d; }' +
-      '#__sparrow_chrome #qr-share-btn { width: 26px; height: 26px; padding: 4px; border: 0; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; background: transparent; flex-shrink: 0; transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease; }' +
+      '#__sparrow_chrome #qr-share-btn { width: 26px; height: 26px; padding: 4px; border: 0; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff !important; background: transparent; flex-shrink: 0; transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease; }' +
       '#qr-share-btn svg { width: 17px; height: 17px; fill: currentColor; }' +
       '#__sparrow_chrome #qr-share-btn:hover { background: rgba(77,144,254,0.2); color: #fff; box-shadow: 0 0 10px rgba(77,144,254,0.28); }' +
       '#menu-btn { width: 32px; height: 32px; border-radius: 8px; background: transparent; color: var(--chrome-muted); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; flex-shrink: 0; position: relative; }' +
@@ -663,9 +663,10 @@ const chromeInjectionJS = `
       '#qr-share-image[hidden] { display: none; }' +
       '#qr-share-status { min-height: 20px; margin: 12px 0; color: #a6a6d8; font-size: 12px; }' +
       '.qr-share-actions { display: flex; justify-content: center; gap: 10px; margin-top: 16px; }' +
-      '#qr-share-modal .qr-share-actions button { min-width: 92px; border: 1px solid rgba(151,154,255,0.45); border-radius: 8px; padding: 9px 14px; cursor: pointer; color: #20212a; background: #fff; font-weight: 600; }' +
-      '#qr-share-modal .qr-share-actions button:hover { background: #e9efff; }' +
-      '#qr-share-modal .qr-share-actions #qr-share-download { border-color: rgba(151,154,255,0.45); color: #20212a; background: #fff; }' +
+      '#qr-share-modal .qr-share-actions button { min-width: 92px; border: 1px solid rgba(77,144,254,0.6); border-radius: 999px; padding: 10px 18px; cursor: pointer; color: #fff; background: rgba(21,22,27,0.9); font-weight: 600; transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease; }' +
+      '#qr-share-modal .qr-share-actions button:hover { transform: translateY(-1px); box-shadow: 0 0 14px rgba(77,144,254,0.28); background: rgba(77,144,254,0.16); }' +
+      '#qr-share-modal .qr-share-actions #qr-share-download { border-color: transparent; color: #fff; background: linear-gradient(110deg, #7c3aed, #4d90fe); box-shadow: 0 5px 16px rgba(77,144,254,0.24); }' +
+      '#qr-share-modal .qr-share-actions #qr-share-download:hover { background: linear-gradient(110deg, #6d28d9, #2878f0); box-shadow: 0 0 18px rgba(124,58,237,0.38); }' +
       '#qr-share-modal .qr-share-actions button:disabled { opacity: 0.5; cursor: default; }' +
       '#favorite-toast { position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 12px); opacity: 0 !important; pointer-events: none; padding: 10px 14px; border-radius: 9px; background: var(--chrome-panel-2); border: 1px solid var(--chrome-accent); color: var(--chrome-text); font-size: 12px; z-index: 10000; transition: opacity 0.18s ease, transform 0.18s ease; }' +
       '#favorite-toast.show { opacity: 1 !important; transform: translate(-50%, 0); }' +
@@ -1443,7 +1444,7 @@ const chromeInjectionJS = `
         box.classList.remove('open');
         return;
       }
-      currentSuggestions = await window.getSuggestions(val);
+      currentSuggestions = await window.getSuggestions(val) || [];
       suggestSelected = -1;
       renderSuggestions();
     }
@@ -1455,9 +1456,9 @@ const chromeInjectionJS = `
         return;
       }
       sparrowSetHTML(box, currentSuggestions.map(function (s, i) {
-        var icon = s.Source === 'bookmark' ? '&#9733;' : s.Source === 'history' ? '&#8635;' : '&#128269;';
+        var icon = s.source === 'bookmark' ? '&#9733;' : s.source === 'history' ? '&#8635;' : '&#128269;';
         return '<div class="suggest-item' + (i === suggestSelected ? ' hovered' : '') + '" data-idx="' + i + '">' +
-          '<span class="suggest-icon">' + icon + '</span><span>' + s.Text + '</span></div>';
+          '<span class="suggest-icon">' + icon + '</span><span>' + s.text + '</span></div>';
       }).join(''));
       Array.prototype.forEach.call(box.querySelectorAll('.suggest-item'), function (el) {
         el.onclick = function () { selectSuggestion(parseInt(el.getAttribute('data-idx'), 10)); };
@@ -1467,9 +1468,10 @@ const chromeInjectionJS = `
 
     function selectSuggestion(i) {
       var s = currentSuggestions[i];
-      document.getElementById('address-bar').value = s.URL;
+      if (!s || !s.url) return;
+      document.getElementById('address-bar').value = s.url;
       document.getElementById('suggest-box').classList.remove('open');
-      window.go(s.URL);
+      window.go(s.url);
     }
 
     function closeSuggestions() {
@@ -1884,6 +1886,12 @@ const chromeInjectionJS = `
         return;
       }
 
+      // Page fullscreen (video etc.): keep the chrome hidden, don't re-enforce it.
+      if (document.documentElement && document.documentElement.hasAttribute('data-sparrow-fs-on')) {
+        root.style.setProperty('display', 'none', 'important');
+        return;
+      }
+
       // Re-append our stylesheet so it stays at the end of <head>.
       // This matters for pages that inject their own CSS after our Init().
       if (document.head && style.parentNode !== document.head) {
@@ -1895,6 +1903,8 @@ const chromeInjectionJS = `
       var toolbar = document.getElementById('toolbar');
       var addressWrap = document.getElementById('address-wrap');
       var addressBar = document.getElementById('address-bar');
+      var appLockButton = document.getElementById('btn-app-lock');
+      var qrShareButton = document.getElementById('qr-share-btn');
       var verticalTabs = root.classList.contains('vertical-tabs');
       var contentHeight = verticalTabs ? 78 : 86;
       var toolbarTop = verticalTabs ? '30px' : '38px';
@@ -1909,6 +1919,19 @@ const chromeInjectionJS = `
           element.style.getPropertyValue(property) === value &&
           element.style.getPropertyPriority(property) === 'important';
       }
+      function addressButtonIntact(button) {
+        var icon = button && button.querySelector('svg');
+        return intact(button, 'display', 'flex') &&
+          intact(button, 'visibility', 'visible') &&
+          intact(button, 'opacity', '1') &&
+          intact(button, 'position', 'static') &&
+          intact(button, 'width', '26px') &&
+          intact(button, 'height', '26px') &&
+          intact(button, 'min-width', '26px') &&
+          intact(button, 'flex', '0 0 26px') &&
+          intact(button, 'color', '#fff') &&
+          intact(icon, 'fill', '#fff');
+      }
       if (intact(root, 'height', contentHeight + 'px') &&
           intact(root, 'z-index', '2147483647') &&
           intact(root, 'display', 'block') &&
@@ -1922,7 +1945,9 @@ const chromeInjectionJS = `
           intact(toolbar, 'left', toolbarLeft) &&
           intact(toolbar, 'width', toolbarWidth) &&
           intact(addressWrap, 'position', 'relative') &&
-          intact(addressBar, 'position', 'static')) {
+          intact(addressBar, 'position', 'static') &&
+          addressButtonIntact(appLockButton) &&
+          addressButtonIntact(qrShareButton)) {
         return;
       }
       root.style.setProperty('display', 'block', 'important');
@@ -2002,6 +2027,20 @@ const chromeInjectionJS = `
         addressBar.style.setProperty('flex', '1 1 auto', 'important');
         addressBar.style.setProperty('min-width', '0', 'important');
       }
+      [appLockButton, qrShareButton].forEach(function (button) {
+        if (!button) return;
+        button.style.setProperty('display', 'flex', 'important');
+        button.style.setProperty('visibility', 'visible', 'important');
+        button.style.setProperty('opacity', '1', 'important');
+        button.style.setProperty('position', 'static', 'important');
+        button.style.setProperty('width', '26px', 'important');
+        button.style.setProperty('height', '26px', 'important');
+        button.style.setProperty('min-width', '26px', 'important');
+        button.style.setProperty('flex', '0 0 26px', 'important');
+        button.style.setProperty('color', '#fff', 'important');
+        var icon = button.querySelector('svg');
+        if (icon) icon.style.setProperty('fill', '#fff', 'important');
+      });
     } catch (e) {}
   }
 
